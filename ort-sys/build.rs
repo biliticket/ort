@@ -1,6 +1,6 @@
 use std::{
 	env, fs,
-	path::{Path, PathBuf}
+	path::{Path, PathBuf},
 };
 
 #[allow(unused)]
@@ -59,7 +59,7 @@ fn hex_str_to_bytes(c: impl AsRef<[u8]>) -> Vec<u8> {
 			b'A'..=b'F' => c - b'A' + 10,
 			b'a'..=b'f' => c - b'a' + 10,
 			b'0'..=b'9' => c - b'0',
-			_ => panic!()
+			_ => panic!(),
 		}
 	}
 
@@ -167,7 +167,7 @@ fn static_link_prerequisites(using_pyke_libs: bool) {
 fn prefer_dynamic_linking() -> bool {
 	match env::var(ORT_ENV_PREFER_DYNAMIC_LINK) {
 		Ok(val) => val == "1" || val.to_lowercase() == "true",
-		Err(_) => cfg!(feature = "cuda") || cfg!(feature = "tensorrt")
+		Err(_) => cfg!(feature = "cuda") || cfg!(feature = "tensorrt"),
 	}
 }
 
@@ -200,7 +200,7 @@ fn prepare_libort_dir() -> (PathBuf, bool) {
 			Ok("armv7-linux-androideabi") => Some("arm-neon-android"),
 			Ok("x86_64-linux-android") => Some("x64-android"),
 			Ok("aarch64-linux-android") => Some("arm64-android"),
-			_ => None
+			_ => None,
 		};
 
 		let mut profile = env::var(ORT_ENV_SYSTEM_LIB_PROFILE).unwrap_or_default();
@@ -294,7 +294,7 @@ fn prepare_libort_dir() -> (PathBuf, bool) {
 						// clog isn't built when not building unit tests, or when compiling for android
 						for potential_clog_path in [
 							transform_dep(external_lib_dir.join("pytorch_cpuinfo-build").join("deps").join("clog"), &profile),
-							transform_dep(external_lib_dir.join("pytorch_clog-build"), &profile)
+							transform_dep(external_lib_dir.join("pytorch_clog-build"), &profile),
 						] {
 							if optional_link_lib(&potential_clog_path, "clog") {
 								break;
@@ -430,6 +430,14 @@ fn prepare_libort_dir() -> (PathBuf, bool) {
 			} else if cfg!(feature = "rocm") {
 				feature_set.push("rocm");
 			}
+
+			let mut flag = true;
+
+			if !cfg!(feature = "directml") && !cfg!(feature = "cuda") && (target == "x86_64-pc-windows-msvc" || target == "i686-pc-windows-msvc") {
+				feature_set.push("noml");
+				flag = false;
+			}
+
 			let feature_set = if !feature_set.is_empty() { feature_set.join(",") } else { "none".to_owned() };
 			println!("selected feature set: {feature_set}");
 			let mut dist = find_dist(&target, &feature_set);
@@ -466,7 +474,7 @@ fn prepare_libort_dir() -> (PathBuf, bool) {
 				extract_tgz(&downloaded_file, &cache_dir);
 			}
 
-			static_link_prerequisites(true);
+			static_link_prerequisites(flag);
 
 			#[cfg(feature = "copy-dylibs")]
 			{
